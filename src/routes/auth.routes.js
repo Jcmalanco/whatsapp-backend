@@ -11,27 +11,53 @@ const { auditLog } = require('../utils/audit');
 const router = express.Router();
 
 router.post('/login', asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) throw new HttpError(400, 'Email y password son requeridos');
+    const { email, password } = req.body;
 
-  const [rows] = await pool.execute('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
-  const user = rows[0];
-  if (!user || user.status !== 'active') throw new HttpError(401, 'Credenciales invalidas');
+    if (!email || !password) {
+        throw new HttpError(400, 'Email y password son requeridos');
+    }
 
-  const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) throw new HttpError(401, 'Credenciales invalidas');
+    const result = await pool.query(
+        'SELECT * FROM users WHERE email = $1 LIMIT 1',
+        [email]
+    );
 
-  const token = jwt.sign({ sub: user.id, role: user.role }, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn
-  });
+    const user = result.rows[0];
 
-  req.user = user;
-  await auditLog(req, 'login', 'user', user.id);
+    if (!user || user.status !== 'active') {
+        throw new HttpError(401, 'Credenciales invalidas');
+    }
 
-  res.json({
-    token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
-  });
+    const ok = await bcrypt.compare(password, user.password_hash);
+
+    if (!ok) {
+        throw new HttpError(401, 'Credenciales invalidas');
+    }
+
+    const token = jwt.sign(
+        {
+            sub: user.id,
+            role: user.role
+        },
+        env.jwtSecret,
+        {
+            expiresIn: env.jwtExpiresIn
+        }
+    );
+
+    req.user = user;
+
+    await auditLog(req, 'login', 'user', user.id);
+
+    res.json({
+        token,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
+    });
 }));
 
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
