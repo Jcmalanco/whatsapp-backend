@@ -20,13 +20,19 @@ module.exports = {
   port: Number(process.env.PORT || 3000),
   appUrl: process.env.APP_URL || 'http://localhost:3000',
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  corsOrigins: (process.env.CORS_ORIGIN || '*')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   db: {
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DB_SSL !== 'false'
       ? { rejectUnauthorized: false }
-      : false
+      : false,
+    connectionTimeoutMs: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 10000),
+    queryTimeoutMs: Number(process.env.DB_QUERY_TIMEOUT_MS || 15000)
   },
   supabase: {
     url: process.env.SUPABASE_URL,
@@ -38,7 +44,6 @@ module.exports = {
     enabled: process.env.BAILEYS_ENABLED !== 'false',
     authDir: process.env.BAILEYS_AUTH_DIR || 'auth_info_baileys',
     browserName: process.env.BAILEYS_BROWSER_NAME || 'WhatsApp CRM',
-    printQrInTerminal: process.env.BAILEYS_PRINT_QR !== 'false',
     reconnectMs: Number(process.env.BAILEYS_RECONNECT_MS || 5000)
   },
   media: {

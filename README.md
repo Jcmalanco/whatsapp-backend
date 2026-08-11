@@ -46,6 +46,8 @@ npm start
 ```env
 DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
 DB_SSL=true
+DB_CONNECTION_TIMEOUT_MS=10000
+DB_QUERY_TIMEOUT_MS=15000
 
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
@@ -54,12 +56,11 @@ SUPABASE_STORAGE_PUBLIC=true
 
 JWT_SECRET=change_this_super_secret_value
 JWT_EXPIRES_IN=8h
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173,https://whatsapp-frontend-rosy-psi.vercel.app
 
 BAILEYS_ENABLED=true
 BAILEYS_AUTH_DIR=auth_info_baileys
 BAILEYS_BROWSER_NAME=WhatsApp CRM
-BAILEYS_PRINT_QR=true
 BAILEYS_RECONNECT_MS=5000
 ```
 
@@ -75,6 +76,28 @@ BAILEYS_RECONNECT_MS=5000
 6. Escanea el QR desde WhatsApp > Dispositivos vinculados.
 
 Si necesitas forzar una nueva sesion, un admin puede presionar **Reiniciar**. Si borras la carpeta `auth_info_baileys`, WhatsApp pedira escanear de nuevo.
+
+## Diagnostico Rapido
+
+Comprueba que el servidor responde:
+
+```powershell
+Invoke-RestMethod http://localhost:3000/health
+```
+
+Comprueba que Supabase/Postgres responde:
+
+```powershell
+Invoke-RestMethod http://localhost:3000/health/db
+```
+
+Si `/health` responde pero `/health/db` tarda o falla, el login tambien fallara porque depende de la tabla `users`.
+
+Si el frontend esta desplegado en Vercel, agrega su dominio a `CORS_ORIGIN`:
+
+```env
+CORS_ORIGIN=http://localhost:5173,https://whatsapp-frontend-rosy-psi.vercel.app
+```
 
 ## Crear Usuario Administrador
 

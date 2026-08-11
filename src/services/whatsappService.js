@@ -72,8 +72,7 @@ async function connect() {
   sock = makeWASocket({
     auth: state,
     browser: Browsers.ubuntu(env.baileys.browserName),
-    logger,
-    printQRInTerminal: env.baileys.printQrInTerminal
+    logger
   });
 
   sock.ev.on('creds.update', saveCreds);

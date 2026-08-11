@@ -3,7 +3,10 @@ const env = require('./env');
 
 const pool = new Pool({
   connectionString: env.db.connectionString,
-  ssl: env.db.ssl
+  ssl: env.db.ssl,
+  connectionTimeoutMillis: env.db.connectionTimeoutMs,
+  query_timeout: env.db.queryTimeoutMs,
+  statement_timeout: env.db.queryTimeoutMs
 });
 
 function toPostgresQuery(sql) {
