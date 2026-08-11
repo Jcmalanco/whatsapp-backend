@@ -4,6 +4,13 @@ const env = require('./config/env');
 const { runBackup } = require('./scripts/backup');
 const baileys = require('./services/whatsappService');
 
+app.get("/", (req, res) => {
+  res.json({
+    message: "WhatsApp Business Backend funcionando",
+    status: "ok"
+  });
+});
+
 app.listen(env.port, () => {
   console.log(`API listening on port ${env.port}`);
 });
