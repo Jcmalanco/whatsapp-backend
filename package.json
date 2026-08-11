@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-business-backend",
   "version": "1.0.0",
-  "description": "Backend multiusuario para WhatsApp Business Cloud API con Supabase.",
+  "description": "Backend multiusuario para WhatsApp con Baileys y Supabase.",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "@whiskeysockets/baileys": "^6.7.24",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -22,7 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "pino": "^9.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

@@ -1,10 +1,14 @@
-# WhatsApp Business Backend con Supabase
+# WhatsApp CRM Backend con Baileys y Supabase
 
-Backend en Node.js y Express para un panel web multiusuario conectado a WhatsApp Business Cloud API, usando Supabase Postgres para datos y Supabase Storage para archivos.
+Backend en Node.js y Express para un panel web multiusuario conectado a WhatsApp mediante Baileys, usando Supabase Postgres para datos y Supabase Storage para archivos.
 
-## Funciones incluidas
+Baileys funciona como cliente de WhatsApp Web. No usa la WhatsApp Business Cloud API ni webhook de Meta; se vincula escaneando un QR desde WhatsApp > Dispositivos vinculados.
 
-- Webhook de WhatsApp Cloud API para recibir mensajes y estados.
+## Funciones Incluidas
+
+- Conexion WhatsApp Web con Baileys y sesion persistente local.
+- QR de vinculacion disponible por API para mostrarlo en el frontend.
+- Recepcion de mensajes mediante eventos de Baileys.
 - Historial de mensajes inmutable con triggers que bloquean borrado de mensajes, eventos y auditoria.
 - Guardado de texto, fecha, contacto, conversacion, usuario asignado, estatus y archivos.
 - Archivos en Supabase Storage; la base guarda la URL/ruta, no el binario pesado.
@@ -12,9 +16,10 @@ Backend en Node.js y Express para un panel web multiusuario conectado a WhatsApp
 - Envio masivo a varios contactos con bitacora.
 - Login con JWT y bcryptjs.
 - Roles: admin, supervisor, agent.
+- Perfiles de usuario con nombre visible, telefono, puesto, departamento, bio y avatar.
 - Bandeja de conversaciones y asignacion de chats.
 - Archivado solo para administrador.
-- Auditoria de acciones: quien, cuando, que hizo, IP y user-agent.
+- Auditoria de acciones.
 - Backup automatico con `pg_dump`.
 
 ## Configuracion Supabase
@@ -24,32 +29,54 @@ Backend en Node.js y Express para un panel web multiusuario conectado a WhatsApp
 3. Copia `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` desde Project Settings > API.
 4. Usa un bucket como `whatsapp-media`. El script lo crea si no existe.
 
-Para que WhatsApp pueda enviar media por URL, el bucket debe ser publico o debes entregar URLs firmadas con duracion suficiente. Este proyecto usa `SUPABASE_STORAGE_PUBLIC=true` por defecto.
+Para enviar media por WhatsApp, el bucket debe ser publico o debes entregar URLs firmadas con duracion suficiente. Este proyecto usa `SUPABASE_STORAGE_PUBLIC=true` por defecto.
 
 ## Instalacion
 
 ```powershell
-npm install
+cd C:\Users\Jcmal\Documents\Codex\2026-06-04\haz-un-backend-de-una-aplicacion\outputs\whatsapp-backend
 Copy-Item .env.example .env
+npm install
 npm run db:migrate
 npm start
 ```
 
-## Variables principales
+## Variables Principales
 
 ```env
 DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
+DB_SSL=true
+
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_STORAGE_BUCKET=whatsapp-media
 SUPABASE_STORAGE_PUBLIC=true
 
-WHATSAPP_VERIFY_TOKEN=change_this_webhook_verify_token
-WHATSAPP_ACCESS_TOKEN=EAAB_your_cloud_api_token
-WHATSAPP_PHONE_NUMBER_ID=123456789
+JWT_SECRET=change_this_super_secret_value
+JWT_EXPIRES_IN=8h
+CORS_ORIGIN=http://localhost:5173
+
+BAILEYS_ENABLED=true
+BAILEYS_AUTH_DIR=auth_info_baileys
+BAILEYS_BROWSER_NAME=WhatsApp CRM
+BAILEYS_PRINT_QR=true
+BAILEYS_RECONNECT_MS=5000
 ```
 
-## Crear usuario administrador
+`BAILEYS_AUTH_DIR` guarda la sesion vinculada. No borres esa carpeta si no quieres volver a escanear QR.
+
+## Vincular WhatsApp
+
+1. Inicia el backend con `npm start`.
+2. Inicia el frontend.
+3. Entra con un usuario admin o supervisor.
+4. Abre la pestaña **Conexion**.
+5. Presiona **Iniciar** si no aparece QR.
+6. Escanea el QR desde WhatsApp > Dispositivos vinculados.
+
+Si necesitas forzar una nueva sesion, un admin puede presionar **Reiniciar**. Si borras la carpeta `auth_info_baileys`, WhatsApp pedira escanear de nuevo.
+
+## Crear Usuario Administrador
 
 Genera hash:
 
@@ -64,18 +91,27 @@ INSERT INTO users (name, email, password_hash, role, status)
 VALUES ('Admin', 'admin@example.com', '$2a$12$REPLACE_HASH', 'admin', 'active');
 ```
 
-## Webhook WhatsApp
+Tambien puedes crear su perfil:
 
-Configura en Meta:
+```sql
+INSERT INTO user_profiles (user_id, display_name, job_title, department)
+SELECT id, name, 'Administrador', 'Operaciones'
+FROM users
+WHERE email = 'admin@example.com'
+ON CONFLICT (user_id) DO NOTHING;
+```
 
-- Callback URL: `https://tu-dominio.com/api/webhooks/whatsapp`
-- Verify token: el valor de `WHATSAPP_VERIFY_TOKEN`
-- Suscripcion: `messages`
-
-## Endpoints principales
+## Endpoints Principales
 
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `GET /api/baileys/status`
+- `POST /api/baileys/start`
+- `POST /api/baileys/restart`
+- `GET /api/profile`
+- `PUT /api/profile`
+- `POST /api/profile/avatar`
+- `GET /api/profile/users`
 - `GET /api/conversations`
 - `GET /api/conversations/:id/messages`
 - `PATCH /api/conversations/:id/assign`
@@ -84,5 +120,7 @@ Configura en Meta:
 - `POST /api/messages/media`
 - `POST /api/broadcasts`
 - `GET /api/audit-logs`
-- `GET /api/webhooks/whatsapp`
-- `POST /api/webhooks/whatsapp`
+
+## Nota Operativa
+
+Baileys no es la API oficial de Meta. Conviene usarlo en entornos controlados, con una cuenta dedicada, buen manejo de sesiones y monitoreo. Para produccion regulada o con alto volumen, la WhatsApp Business Cloud API sigue siendo la opcion oficial.

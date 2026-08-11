@@ -6,10 +6,7 @@ const required = [
   'DATABASE_URL',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
-  'JWT_SECRET',
-  'WHATSAPP_VERIFY_TOKEN',
-  'WHATSAPP_ACCESS_TOKEN',
-  'WHATSAPP_PHONE_NUMBER_ID'
+  'JWT_SECRET'
 ];
 
 for (const key of required) {
@@ -37,11 +34,12 @@ module.exports = {
     storageBucket: process.env.SUPABASE_STORAGE_BUCKET || 'whatsapp-media',
     storagePublic: process.env.SUPABASE_STORAGE_PUBLIC !== 'false'
   },
-  whatsapp: {
-    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
-    accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-    apiVersion: process.env.WHATSAPP_API_VERSION || 'v20.0'
+  baileys: {
+    enabled: process.env.BAILEYS_ENABLED !== 'false',
+    authDir: process.env.BAILEYS_AUTH_DIR || 'auth_info_baileys',
+    browserName: process.env.BAILEYS_BROWSER_NAME || 'WhatsApp CRM',
+    printQrInTerminal: process.env.BAILEYS_PRINT_QR !== 'false',
+    reconnectMs: Number(process.env.BAILEYS_RECONNECT_MS || 5000)
   },
   media: {
     storage: process.env.MEDIA_STORAGE || 'supabase',
