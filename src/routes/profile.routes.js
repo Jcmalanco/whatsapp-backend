@@ -18,7 +18,13 @@ const upload = multer({
 router.use(requireAuth);
 
 router.get('/', asyncHandler(async (req, res) => {
+  
   const profile = await getOrCreateProfile(req.user.id, req.user.name);
+
+  if (profile.avatar_url) {
+    profile.avatar_url = await createSignedMediaUrl(profile.avatar_url);
+  }
+
   res.json({ profile });
 }));
 
