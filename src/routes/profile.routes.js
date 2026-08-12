@@ -6,7 +6,7 @@ const HttpError = require('../utils/httpError');
 const { requireAuth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
 const { auditLog } = require('../utils/audit');
-const { saveUploadedFile } = require('../services/mediaStorage');
+const { saveUploadedFile, createSignedMediaUrl } = require('../services/mediaStorage');
 
 const router = express.Router();
 const upload = multer({
@@ -56,18 +56,27 @@ router.post('/avatar', upload.single('avatar'), asyncHandler(async (req, res) =>
   if (!req.file) throw new HttpError(400, 'avatar requerido');
   if (!req.file.mimetype.startsWith('image/')) throw new HttpError(400, 'El avatar debe ser imagen');
 
-  const avatarUrl = await saveUploadedFile(req.file);
+  const avatarPath = await saveUploadedFile(req.file);
+
   const [rows] = await pool.execute(
     `INSERT INTO user_profiles (user_id, display_name, avatar_url)
-     VALUES (?, ?, ?)
-     ON CONFLICT (user_id)
-     DO UPDATE SET avatar_url = EXCLUDED.avatar_url
-     RETURNING *`,
-    [req.user.id, req.user.name, avatarUrl]
+    VALUES (?, ?, ?)
+    ON CONFLICT (user_id)
+    DO UPDATE SET avatar_url = EXCLUDED.avatar_url
+    RETURNING *`,
+    [req.user.id, req.user.name, avatarPath]
   );
 
-  await auditLog(req, 'update_profile_avatar', 'user_profile', rows[0].id, { avatarUrl });
-  res.json({ profile: rows[0] });
+  const signedUrl = await createSignedMediaUrl(avatarPath, 60 * 60);
+
+  await auditLog(req, 'update_profile_avatar', 'user_profile', rows[0].id, { avatarPath });
+
+  res.json({
+    profile: {
+      ...rows[0],
+      avatar_url: signedUrl
+    }
+  });
 }));
 
 router.get('/users', requireRole('admin', 'supervisor'), asyncHandler(async (req, res) => {
