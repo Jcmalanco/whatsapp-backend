@@ -67,7 +67,7 @@ router.post('/avatar', upload.single('avatar'), asyncHandler(async (req, res) =>
     [
     req.user.id,
     req.user.name,
-    req.user.avatar_url
+    avatarUrl
     ]
   );
 
