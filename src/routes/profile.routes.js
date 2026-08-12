@@ -6,9 +6,10 @@ const HttpError = require('../utils/httpError');
 const { requireAuth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
 const { auditLog } = require('../utils/audit');
-const { saveUploadedFile } = require('../services/mediaStorage');
+const { saveUploadedFile, createSignedMediaUrl } = require('../services/mediaStorage');
 
 const router = express.Router();
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }

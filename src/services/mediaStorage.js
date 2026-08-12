@@ -34,4 +34,25 @@ async function uploadToSupabase(buffer, filename, contentType) {
   return data.signedUrl;
 }
 
-module.exports = { saveBuffer, saveUploadedFile };
+async function createSignedMediaUrl(key) {
+  if (!key) return null;
+
+  if (key.startsWith('http://') || key.startsWith('https://')) {
+  return key;
+  }
+
+  if (env.supabase.storagePublic) {
+    const { data } = supabase.storage.from(env.supabase.storageBucket).getPublicUrl(key);
+    return data.publicUrl;
+  }
+
+  const { data, error } = await supabase.storage.from(env.supabase.storageBucket).createSignedUrl(key, 60 * 60 * 24 * 7);
+
+  if (error) {
+    throw new Error(`Supabase signed URL failed: ${error.message}`);
+  }
+
+  return data.signedUrl;
+}
+
+module.exports = { saveBuffer, saveUploadedFile, createSignedMediaUrl };
