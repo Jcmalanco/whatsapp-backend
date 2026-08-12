@@ -11,9 +11,8 @@ async function saveUploadedFile(file) {
 }
 
 async function uploadToSupabase(buffer, filename, contentType) {
-  const safeName = filename.replace(/[^a-zA-Z0-9.*-]/g, '*');
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
   const key = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeName}`;
-
   const { error } = await supabase.storage
     .from(env.supabase.storageBucket)
     .upload(key, buffer, {
@@ -25,22 +24,20 @@ async function uploadToSupabase(buffer, filename, contentType) {
     throw new Error(`Supabase Storage upload failed: ${error.message}`);
   }
 
-  // Guardamos solamente la ruta del archivo.
-  return key;
-}
+  if (env.supabase.storagePublic) {
+    const { data } = supabase.storage.from(env.supabase.storageBucket).getPublicUrl(key);
+    return data.publicUrl;
+  }
 
-async function getSignedUrl(path) {
-  if (!path) return null;
-
-  const { data, error } = await supabase.storage
+  const { data, error: signedError } = await supabase.storage
     .from(env.supabase.storageBucket)
-    .createSignedUrl(path, 60 * 60 * 24 * 7);
+    .createSignedUrl(key, 60 * 60 * 24 * 7);
 
-  if (error) {
-    throw new Error(`Supabase signed URL failed: ${error.message}`);
+  if (signedError) {
+    throw new Error(`Supabase signed URL failed: ${signedError.message}`);
   }
 
   return data.signedUrl;
 }
 
-module.exports = { saveBuffer, saveUploadedFile, getSignedUrl };
+module.exports = { saveBuffer, saveUploadedFile };
