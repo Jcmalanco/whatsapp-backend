@@ -32,6 +32,7 @@ async function uploadToSupabase(buffer, filename, contentType) {
   if (signedError) {
     throw new Error(`Supabase signed URL failed: ${signedError.message}`);
   }
+  console.log("SIGNED URL:", data.signedUrl);
 
   return data.signedUrl;
 }
