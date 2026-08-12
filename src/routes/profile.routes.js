@@ -17,7 +17,7 @@ const upload = multer({
 router.use(requireAuth);
 
 router.get('/', asyncHandler(async (req, res) => {
-  const profile = await getOrCreateProfile(req.user.id, req.user.name);
+  const profile = await saveUploadedFile(req.user.id, req.user.name);
   res.json({ profile });
 }));
 
@@ -67,7 +67,7 @@ router.post('/avatar', upload.single('avatar'), asyncHandler(async (req, res) =>
     [
     req.user.id,
     req.user.name,
-    avatarUrl
+    req.user.avatar_url
     ]
   );
 
