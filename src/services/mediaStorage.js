@@ -13,6 +13,7 @@ async function saveUploadedFile(file) {
 async function uploadToSupabase(buffer, filename, contentType) {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
   const key = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeName}`;
+
   const { error } = await supabase.storage
     .from(env.supabase.storageBucket)
     .upload(key, buffer, {
@@ -22,11 +23,6 @@ async function uploadToSupabase(buffer, filename, contentType) {
 
   if (error) {
     throw new Error(`Supabase Storage upload failed: ${error.message}`);
-  }
-
-  if (env.supabase.storagePublic) {
-    const { data } = supabase.storage.from(env.supabase.storageBucket).getPublicUrl(key);
-    return data.publicUrl;
   }
 
   const { data, error: signedError } = await supabase.storage
