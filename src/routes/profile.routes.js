@@ -6,10 +6,9 @@ const HttpError = require('../utils/httpError');
 const { requireAuth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
 const { auditLog } = require('../utils/audit');
-const { saveUploadedFile, getSignedUrl } = require('../services/mediaStorage');
+const { saveUploadedFile, createSignedMediaUrl } = require('../services/mediaStorage');
 
 const router = express.Router();
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }
@@ -19,17 +18,11 @@ router.use(requireAuth);
 
 router.get('/', asyncHandler(async (req, res) => {
   const profile = await getOrCreateProfile(req.user.id, req.user.name);
-
-  if (profile.avatar_url) {
-    profile.avatar_url = await getSignedUrl(profile.avatar_url);
-  }
-
   res.json({ profile });
 }));
 
 router.put('/', asyncHandler(async (req, res) => {
   const { displayName, phone, jobTitle, department, bio } = req.body;
-
   if (!displayName) throw new HttpError(400, 'displayName requerido');
 
   const [rows] = await pool.execute(
@@ -56,11 +49,6 @@ router.put('/', asyncHandler(async (req, res) => {
 
   await pool.execute('UPDATE users SET name = ? WHERE id = ?', [displayName, req.user.id]);
   await auditLog(req, 'update_own_profile', 'user_profile', rows[0].id);
-
-  if (rows[0].avatar_url) {
-    rows[0].avatar_url = await getSignedUrl(rows[0].avatar_url);
-  }
-
   res.json({ profile: rows[0] });
 }));
 
@@ -68,21 +56,17 @@ router.post('/avatar', upload.single('avatar'), asyncHandler(async (req, res) =>
   if (!req.file) throw new HttpError(400, 'avatar requerido');
   if (!req.file.mimetype.startsWith('image/')) throw new HttpError(400, 'El avatar debe ser imagen');
 
-  const avatarPath = await saveUploadedFile(req.file);
-
+  const avatarUrl = await saveUploadedFile(req.file);
   const [rows] = await pool.execute(
     `INSERT INTO user_profiles (user_id, display_name, avatar_url)
      VALUES (?, ?, ?)
      ON CONFLICT (user_id)
      DO UPDATE SET avatar_url = EXCLUDED.avatar_url
      RETURNING *`,
-    [req.user.id, req.user.name, avatarPath]
+    [req.user.id, req.user.name, avatarUrl]
   );
 
-  await auditLog(req, 'update_profile_avatar', 'user_profile', rows[0].id, { avatarPath });
-
-  rows[0].avatar_url = await getSignedUrl(avatarPath);
-
+  await auditLog(req, 'update_profile_avatar', 'user_profile', rows[0].id, { avatarUrl });
   res.json({ profile: rows[0] });
 }));
 
@@ -106,13 +90,6 @@ router.get('/users', requireRole('admin', 'supervisor'), asyncHandler(async (req
      LEFT JOIN user_profiles p ON p.user_id = u.id
      ORDER BY u.name`
   );
-
-  for (const profile of rows) {
-    if (profile.avatar_url) {
-      profile.avatar_url = await getSignedUrl(profile.avatar_url);
-    }
-  }
-
   res.json({ profiles: rows });
 }));
 
@@ -121,7 +98,6 @@ async function getOrCreateProfile(userId, fallbackName) {
     'SELECT * FROM user_profiles WHERE user_id = ? LIMIT 1',
     [userId]
   );
-
   if (existing[0]) return existing[0];
 
   const [created] = await pool.execute(
@@ -130,7 +106,6 @@ async function getOrCreateProfile(userId, fallbackName) {
      RETURNING *`,
     [userId, fallbackName]
   );
-
   return created[0];
 }
 
