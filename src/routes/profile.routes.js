@@ -53,26 +53,24 @@ router.put('/', asyncHandler(async (req, res) => {
 }));
 
 router.post('/avatar', upload.single('avatar'), asyncHandler(async (req, res) => {
+  
   if (!req.file) throw new HttpError(400, 'avatar requerido');
+  
   if (!req.file.mimetype.startsWith('image/')) throw new HttpError(400, 'El avatar debe ser imagen');
-
+  
   const avatarUrl = await saveUploadedFile(req.file);
 
   const [rows] = await pool.execute(
     `INSERT INTO user_profiles (user_id, display_name, avatar_url)
-     VALUES (?, ?, ?)
-     ON CONFLICT (user_id)
-     DO UPDATE SET avatar_url = EXCLUDED.avatar_url
-     RETURNING *`,
-    [
-    req.user.id,
-    req.user.name,
-    avatarUrl
-    ]
+    VALUES (?, ?, ?)
+    ON CONFLICT (user_id)
+    DO UPDATE SET avatar_url = EXCLUDED.avatar_url
+    RETURNING *`,
+    [req.user.id, req.user.name, avatarUrl]
   );
-
+  
   await auditLog(req, 'update_profile_avatar', 'user_profile', rows[0].id, { avatarUrl });
-
+  
   res.json({ profile: rows[0] });
 }));
 

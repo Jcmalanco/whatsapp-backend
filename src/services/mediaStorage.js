@@ -20,9 +20,9 @@ async function uploadToSupabase(buffer, filename, contentType) {
   }
 
   if (env.supabase.storagePublic) {
-  const { data } = supabase.storage.from(env.supabase.storageBucket).getPublicUrl(key);
+    const { data } = supabase.storage.from(env.supabase.storageBucket).getPublicUrl(key);
 
-  return data.publicUrl;
+    return data.publicUrl;
   }
 
   const { data, error: signedError } = await supabase.storage.from(env.supabase.storageBucket).createSignedUrl(key, 60 * 60 * 24 * 7);
