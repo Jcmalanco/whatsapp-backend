@@ -144,6 +144,3 @@ ON CONFLICT (user_id) DO NOTHING;
 - `POST /api/broadcasts`
 - `GET /api/audit-logs`
 
-## Nota Operativa
-
-Baileys no es la API oficial de Meta. Conviene usarlo en entornos controlados, con una cuenta dedicada, buen manejo de sesiones y monitoreo. Para produccion regulada o con alto volumen, la WhatsApp Business Cloud API sigue siendo la opcion oficial.
